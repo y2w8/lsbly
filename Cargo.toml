@@ -1,0 +1,10 @@
+[package]
+name = "lsbly"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bytesize = "2.3.1"
+crossterm = "0.29.0"
+ratatui = "0.30.0"
+serde_json = "1.0.149"
