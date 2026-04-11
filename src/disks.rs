@@ -1,10 +1,9 @@
 use std::{path::PathBuf, process::Command};
 
 use bytesize::ByteSize;
+use color_eyre::{Result, eyre::Context};
 
-use crate::LsblyError;
-
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub struct BlockDevice {
     // like "nvme0n1"
     pub name: Option<String>,
@@ -45,7 +44,7 @@ pub struct Disks();
 
 // TODO: find library or using code not command.
 impl Disks {
-    pub fn list() -> Result<Vec<BlockDevice>, LsblyError> {
+    pub fn list() -> Result<Vec<BlockDevice>> {
         let json_disks: serde_json::Value = self::Disks::run_lsblk()?;
 
         let mut disks: Vec<BlockDevice> = Vec::new();
@@ -117,20 +116,19 @@ impl Disks {
         Ok(disks)
     }
 
-    pub fn run_lsblk() -> Result<serde_json::Value, LsblyError> {
+    pub fn run_lsblk() -> Result<serde_json::Value> {
         let output = Command::new("lsblk")
             .args([
                 "-o",
                 "NAME,MOUNTPOINT,PATH,SIZE,UUID,LABEL,PARTLABEL,PARTFLAGS,PARTUUID,FSSIZE,FSUSED",
                 "-Jb",
             ])
-            .output()
-            .map_err(|_| LsblyError::CantRunLsblk)?;
+            .output().context("failed to run lsblk")?;
 
-        let stdout_str = String::from_utf8(output.stdout).map_err(|_| LsblyError::InvalidUtf8)?;
+        let stdout_str = String::from_utf8(output.stdout).context("failed to extract string from cmd output")?;
 
         let json_output: serde_json::Value =
-            serde_json::from_str(&stdout_str).map_err(|_| LsblyError::JsonParseError)?;
+            serde_json::from_str(&stdout_str).context("failed to parse cmd output")?;
 
         Ok(json_output)
     }
